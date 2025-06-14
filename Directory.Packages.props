@@ -1,0 +1,20 @@
+<Project>
+  <PropertyGroup>
+    <ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
+    <NoWarn>$(NoWarn);NU1507</NoWarn>
+  </PropertyGroup>
+  <ItemGroup>
+      <PackageVersion Include="System.CommandLine" Version="2.0.0-beta4.22272.1" />
+      <PackageVersion Include="Microsoft.OpenApi.Readers" Version="1.6.24" />
+      <PackageVersion Include="SharpYaml" Version="2.1.3" />
+      <PackageVersion Include="Microsoft.Extensions.Http" Version="9.0.6" />
+      <PackageVersion Include="Microsoft.NET.Test.Sdk" Version="17.14.1" />
+      <PackageVersion Include="MSTest.TestAdapter" Version="3.9.2" />
+      <PackageVersion Include="MSTest.TestFramework" Version="3.9.2" />
+      <PackageVersion Include="coverlet.collector" Version="6.0.4" />
+      <PackageVersion Include="Microsoft.OpenApi" Version="1.6.24" />
+      <PackageVersion Include="Moq" Version="4.20.72" />
+      <PackageVersion Include="FluentAssertions" Version="8.3.0" />
+      <PackageVersion Include="WireMock.Net" Version="1.8.11" />
+  </ItemGroup>
+</Project>

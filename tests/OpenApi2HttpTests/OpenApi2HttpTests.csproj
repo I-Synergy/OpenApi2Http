@@ -1,0 +1,35 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+	<PropertyGroup>
+		<TargetFramework>net9.0</TargetFramework>
+		<ImplicitUsings>enable</ImplicitUsings>
+		<Nullable>enable</Nullable>
+		<IsPackable>false</IsPackable>
+		<IsTestProject>true</IsTestProject>
+	</PropertyGroup>
+
+	<ItemGroup>
+		<PackageReference Include="Microsoft.NET.Test.Sdk" />
+		<PackageReference Include="MSTest.TestAdapter" />
+		<PackageReference Include="MSTest.TestFramework"/>
+		<PackageReference Include="coverlet.collector" >
+			<PrivateAssets>all</PrivateAssets>
+			<IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+		</PackageReference>
+		<PackageReference Include="Microsoft.OpenApi"/>
+		<PackageReference Include="Moq"/>
+		<PackageReference Include="FluentAssertions"/>
+		<PackageReference Include="WireMock.Net"/>
+	</ItemGroup>
+
+	<ItemGroup>
+		<ProjectReference Include="..\..\src\OpenApi2Http\OpenApi2Http.csproj" />
+	</ItemGroup>
+
+	<ItemGroup>
+		<None Update="TestData\**\*">
+			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+		</None>
+	</ItemGroup>
+
+</Project>

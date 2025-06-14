@@ -1,0 +1,159 @@
+# Azure Pipelines YAML for OpenApi2Http
+# Build, test, pack, and push to NuGet
+name: $(Date:yyyy).1$(Date:MMdd).1$(Date:HHmm)
+
+trigger:
+  - main
+
+variables:
+  - name: DOTNET_SKIP_FIRST_TIME_EXPERIENCE
+    value: 'true'
+  - name: DOTNET_CLI_TELEMETRY_OPTOUT
+    value: 'true'
+  - name: VersionNumber
+    value: ''
+  - name: VersionInformational  
+    value: ''
+  - name: VersionPackage
+    value: ''
+
+  - ${{ if eq(variables['Build.Reason'], 'PullRequest') }}:
+    - group: ACC
+  - ${{ if ne(variables['Build.Reason'], 'PullRequest') }}:
+    - group: PROD
+
+pool:
+  vmImage: 'windows-latest'
+
+stages:
+  - stage: BuildStage
+    displayName: 'Build'
+    jobs:
+    - job: BuildJob
+      displayName: 'Build, test and pack assemblies'
+      timeoutInMinutes: 120
+      steps:
+        - task: PowerShell@2
+          displayName: Set Version Variables
+          inputs:
+            targetType: 'inline'
+            script: |
+              $buildNumber = $Env:BUILD_BUILDNUMBER
+              $parts = $buildNumber.Split('.')
+              
+              $versionMajor = $parts[0]    # yyyy
+              $versionMinor = $parts[1]    # 1DDD
+              $versionRevision = $parts[2]  # HHmm
+              $versionBuild = if ($env:BUILD_REASON -eq 'PullRequest') { (Get-Date).Second } else { 0 }
+              
+              $versionNumber = "$versionMajor.$versionMinor.$versionRevision.$versionBuild"
+              $versionInformational = "$versionMajor.$versionMinor.$versionRevision"
+              $versionPackage = if ($env:BUILD_REASON -eq 'PullRequest') { "$versionNumber-preview" } else { $versionNumber }
+              
+              Write-Host "##vso[task.setvariable variable=VersionNumber]$versionNumber"
+              Write-Host "##vso[task.setvariable variable=VersionInformational]$versionInformational"
+              Write-Host "##vso[task.setvariable variable=VersionPackage]$versionPackage"
+
+        - task: Assembly-Info-NetCore@3
+          displayName: 'Set Release versions'
+          inputs:
+            FileNames: |
+              src/**/*.csproj
+              tests/**/*.csproj
+            InsertAttributes: true
+            WriteBOM: true
+            VersionNumber: '$(VersionNumber)'
+            FileVersionNumber: '$(VersionNumber)'
+            InformationalVersion: '$(VersionInformational)'
+            PackageVersion: '$(VersionPackage)'
+            UpdateBuildNumber: '$(VersionPackage)'
+            AddBuildTag: 'v$(VersionPackage)'
+
+        - task: NuGetToolInstaller@1
+          displayName: 'Install NuGet 6.12.2'
+          inputs:
+            versionSpec: 6.12.2
+
+        - task: UseDotNet@2
+          displayName: 'Install .Net Sdk'
+          inputs:
+            packageType: 'sdk'
+            useGlobalJson: true
+
+        - task: DownloadSecureFile@1
+          displayName: 'Download secure file'
+          inputs:
+            secureFile: 'intelligence-online.pfx'
+
+        - task: MSBuild@1
+          displayName: 'Build OpenApi2Http'
+          inputs:
+            solution: 'OpenApi2Http.slnx'
+            msbuildArchitecture: 'x64'
+            configuration: $(BuildConfiguration)
+            msbuildArguments: '-p:Version=$(VersionPackage) -t:restore,build,pack -p:ContinuousIntegrationBuild=true /nr:false' #this flag is important to avoid DLL lock for the 2nd build/analysis
+
+        - task: DotNetCoreCLI@2
+          displayName: 'Test OpenApi2Http'
+          inputs:
+            command: test
+            projects: 'OpenApi2Http.slnx'
+            arguments: '--configuration $(BuildConfiguration) --no-build --test-adapter-path:. --collect:"Code Coverage" --settings:codecoverage.runsettings'
+       
+        - task: CopyFiles@2
+          inputs:
+            SourceFolder: '$(Build.SourcesDirectory)\packages'
+            Contents: '*'
+            TargetFolder: '$(Build.ArtifactStagingDirectory)'
+
+        - task: NuGetCommand@2
+          displayName: 'Sign Nuget packages'
+          inputs:
+            command: 'custom'
+            arguments: 'sign $(Build.ArtifactStagingDirectory)\*.nupkg -CertificatePath "$(Agent.WorkFolder)\_temp\intelligence-online.pfx" -CertificatePassword "$(CertPassword)" -Timestamper "$(TimestampUrl)"'
+
+        - task: NuGetCommand@2
+          displayName: 'Sign Nuget symbol packages'
+          inputs:
+            command: 'custom'
+            arguments: 'sign $(Build.ArtifactStagingDirectory)\*.snupkg -CertificatePath "$(Agent.WorkFolder)\_temp\intelligence-online.pfx" -CertificatePassword "$(CertPassword)" -Timestamper "$(TimestampUrl)"'
+
+        - task: PublishBuildArtifacts@1
+          displayName: 'Publish Artifacts'
+          inputs:
+            pathtoPublish: '$(Build.ArtifactStagingDirectory)'
+            artifactName: Output
+            publishLocation: 'Container'
+
+        - bash: |
+            git push --prune https://$(GithubPAT)@github.com/I-Synergy/OpenApi2Http \
+                +refs/remotes/origin/*:refs/heads/* +refs/tags/*:refs/tags/*
+          displayName: 'Copy source to Github'
+          condition: eq(variables['Build.SourceBranch'], 'refs/heads/main')
+
+  - stage: Release
+    displayName: 'Release'
+    dependsOn: BuildStage
+    condition: succeeded()
+    jobs:
+    - job: ArtifactsJob
+      displayName: 'Get Nuget artifacts'
+      steps:
+        - task: DownloadPipelineArtifact@2
+          inputs:
+            artifact: 'Output'
+
+    - deployment: DeployNuget
+      displayName: 'Deploy to Artifacts'
+      environment: $(Environment)
+      strategy:
+        runOnce:
+          deploy:
+            steps:
+              - task: NuGetCommand@2
+                displayName: 'NuGet push - OpenApi2Http'
+                inputs:
+                  command: 'push'
+                  packagesToPush: '$(Pipeline.Workspace)/Output/*.nupkg'
+                  nuGetFeedType: 'external'
+                  publishFeedCredentials: 'Nuget.org'

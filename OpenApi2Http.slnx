@@ -1,0 +1,19 @@
+<Solution>
+  <Folder Name="/Solution Items/">
+    <File Path=".editorconfig" />
+    <File Path=".gitignore" />
+    <File Path="azure-pipelines.yml" />
+    <File Path="Directory.Build.props" />
+    <File Path="Directory.Build.targets" />
+    <File Path="Directory.Packages.props" />
+    <File Path="global.json" />
+    <File Path="nuget.config" />
+    <File Path="README.md" />
+  </Folder>
+  <Folder Name="/Tests/">
+    <Project Path="tests/OpenApi2HttpTests/OpenApi2HttpTests.csproj" Id="5d5aa816-b76b-4465-a926-63eabb02eb0b" />
+  </Folder>
+  <Folder Name="/Tools/">
+    <Project Path="src/OpenApi2Http/OpenApi2Http.csproj" />
+  </Folder>
+</Solution>

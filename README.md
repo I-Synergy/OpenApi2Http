@@ -1,6 +1,18 @@
 # OpenAPI to HTTP Converter
 
-A .NET global tool that converts OpenAPI specifications (Swagger) to `.http` files for API testing in Visual Studio Code, JetBrains IDEs, and other HTTP clients.
+A .NET global tool that converts OpenAPI specifications (json) to `.http` files for API testing in Visual Studio Code, JetBrains IDEs, and other HTTP clients.
+
+## Build Status
+
+| Build | Status |
+|:---|---|
+| [OpenApi2Http](https://github.com/I-Synergy/OpenApi2Http) | [![Build Status](https://dev.azure.com/i-synergy/Tools/_apis/build/status/OpenApi2Http?branchName=main)](https://dev.azure.com/i-synergy/Tools/_build?definitionId=212&branchName=main)|
+
+## Nuget Active Deployment Status
+| Release | Status |
+|:---|---|
+| [OpenApi2Http](https://www.nuget.org/packages/OpenApi2Http/) | ![Nuget Version](https://img.shields.io/nuget/vpre/OpenApi2Http) |
+
 
 ## Installation
 

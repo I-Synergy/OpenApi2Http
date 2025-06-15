@@ -79,15 +79,12 @@ The tool generates `.http` files with:
 ### Example Output
 
 ```http
-#
+@endpoint = https://petstore.swagger.io/v2
+
 # Pet Store API
 # Version: 1.0.0
 # Source: https://petstore.swagger.io/v2/swagger.json
 # Generated: 2025-06-14 10:30:15
-#
-
-# API Endpoint
-@endpoint = https://petstore.swagger.io/v2
 
 ### Get all pets
 GET {{endpoint}}/pets
@@ -99,7 +96,6 @@ POST {{endpoint}}/pets
 Content-Type: application/json
 # Authorization: Bearer {{token}}
 # X-API-Key: {{apiKey}}
-
 {
   // Add your request body here
 }

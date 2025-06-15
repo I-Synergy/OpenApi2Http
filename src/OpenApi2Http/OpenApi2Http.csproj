@@ -11,9 +11,9 @@
 	</PropertyGroup>
 
 	<ItemGroup>
-		<PackageReference Include="System.CommandLine"/>
-		<PackageReference Include="Microsoft.OpenApi.Readers"/>
-		<PackageReference Include="SharpYaml"/>
-		<PackageReference Include="Microsoft.Extensions.Http"/>
+		<PackageReference Include="System.CommandLine" />
+		<PackageReference Include="Microsoft.OpenApi.Readers" />
+		<PackageReference Include="SharpYaml" />
+		<PackageReference Include="Microsoft.Extensions.Http" />
 	</ItemGroup>
 </Project>

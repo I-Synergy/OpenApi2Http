@@ -123,7 +123,7 @@ public class OpenApiParsingTests
 
         // Assert
         result.Should().Contain("# Source: https://example.com/openapi.json");
-        result.Should().Contain("# Generated:");
+        result.Should().Contain("# Generated");
     }
 
     [TestMethod]

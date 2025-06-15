@@ -62,13 +62,9 @@ public class Program
             var file = result.GetValueForOption(fileOption);
 
             if (string.IsNullOrEmpty(source) && string.IsNullOrEmpty(file))
-            {
                 result.ErrorMessage = "Either --source or --file must be specified";
-            }
             else if (!string.IsNullOrEmpty(source) && !string.IsNullOrEmpty(file))
-            {
                 result.ErrorMessage = "Cannot specify both --source and --file";
-            }
         });
 
         rootCommand.SetHandler(async (string? source, string? file, string? endpoint, FileInfo? output, bool ignore, bool verbose, int timeout) =>
@@ -82,10 +78,10 @@ public class Program
             catch (Exception ex)
             {
                 Console.Error.WriteLine($"Error: {ex.Message}");
+
                 if (verbose)
-                {
                     Console.Error.WriteLine($"Stack trace: {ex.StackTrace}");
-                }
+
                 Environment.Exit(1);
             }
         }, sourceOption, fileOption, endpointOption, outputOption, ignoreOption, verboseOption, timeoutOption);
@@ -104,9 +100,7 @@ public class Program
         if (IsUrl(source))
         {
             if (verbose)
-            {
                 Console.WriteLine($"Downloading OpenAPI spec from: {source}");
-            }
 
             try
             {
@@ -121,14 +115,10 @@ public class Program
         else
         {
             if (verbose)
-            {
                 Console.WriteLine($"Reading OpenAPI file: {source}");
-            }
 
             if (!File.Exists(source))
-            {
                 throw new SystemException($"File does not exist: {source}");
-            }
 
             fileContent = await File.ReadAllTextAsync(source);
             sourceName = Path.GetFileNameWithoutExtension(source);
@@ -143,6 +133,7 @@ public class Program
             if (verbose || !ignoreErrors)
             {
                 Console.WriteLine($"Found {diagnostic.Errors.Count} validation error(s):");
+
                 foreach (var error in diagnostic.Errors)
                 {
                     Console.WriteLine($"  - {error.Message}");
@@ -150,14 +141,13 @@ public class Program
             }
 
             if (!ignoreErrors)
-            {
                 throw new SystemException("OpenAPI spec contains validation errors. Use --ignore to proceed anyway.");
-            }
         }
 
         if (diagnostic.Warnings.Count > 0 && verbose)
         {
             Console.WriteLine($"Found {diagnostic.Warnings.Count} warning(s):");
+
             foreach (var warning in diagnostic.Warnings)
             {
                 Console.WriteLine($"  - {warning.Message}");
@@ -166,28 +156,25 @@ public class Program
 
         // Determine endpoint
         string endpoint = "";
+
         if (document.Servers?.Count > 0)
         {
             endpoint = document.Servers[0].Url;
+
             if (verbose)
-            {
                 Console.WriteLine($"Using server from spec: {endpoint}");
-            }
         }
 
         if (!string.IsNullOrEmpty(endpointOverride))
         {
             endpoint = endpointOverride;
+
             if (verbose)
-            {
                 Console.WriteLine($"Using endpoint override: {endpoint}");
-            }
         }
 
         if (string.IsNullOrEmpty(endpoint))
-        {
             throw new SystemException("No servers found in OpenAPI spec. Please provide an endpoint with --endpoint");
-        }
 
         // Determine output file
         if (outputFile == null)
@@ -198,9 +185,7 @@ public class Program
         }
 
         if (verbose)
-        {
             Console.WriteLine($"Output file: {outputFile.FullName}");
-        }
 
         // Generate .http file content
         var httpContent = GenerateHttpFile(document, endpoint, source, verbose);
@@ -209,10 +194,9 @@ public class Program
         await File.WriteAllTextAsync(outputFile.FullName, httpContent);
 
         Console.WriteLine($"Successfully generated {outputFile.Name}");
+
         if (verbose)
-        {
             Console.WriteLine($"Generated {CountRequests(document)} HTTP requests");
-        }
     }
 
     static bool IsUrl(string source)
@@ -224,6 +208,7 @@ public class Program
     static async Task<string> DownloadOpenApiSpec(string url, bool verbose, HttpClient? customClient = null)
     {
         var client = customClient ?? httpClient;
+
         try
         {
             using var response = await client.GetAsync(url);
@@ -239,9 +224,7 @@ public class Program
             var content = await response.Content.ReadAsStringAsync();
 
             if (verbose)
-            {
                 Console.WriteLine($"Downloaded {content.Length} characters");
-            }
 
             return content;
         }
@@ -275,10 +258,9 @@ public class Program
                 if (!string.IsNullOrEmpty(lastSegment) && lastSegment.Contains('.'))
                 {
                     var nameWithoutExt = Path.GetFileNameWithoutExtension(lastSegment);
+
                     if (!string.IsNullOrEmpty(nameWithoutExt))
-                    {
                         return SanitizeFileName(nameWithoutExt);
-                    }
                 }
             }
 
@@ -297,10 +279,13 @@ public class Program
         // Remove invalid file name characters
         var invalid = Path.GetInvalidFileNameChars();
         var sanitized = string.Join("_", fileName.Split(invalid, StringSplitOptions.RemoveEmptyEntries)).Trim();
+
         // Replace all whitespace with underscores
         sanitized = System.Text.RegularExpressions.Regex.Replace(sanitized, "\\s+", "_");
+
         if (string.IsNullOrWhiteSpace(sanitized))
             return "openapi";
+
         return sanitized;
     }
 
@@ -315,32 +300,38 @@ public class Program
 
         // Format multi-line descriptions as comments
         title = FormatAsComment(title);
+
         if (!string.IsNullOrEmpty(description) && description != title)
             description = FormatAsComment(description);
         else
-            description = null;
+            description = string.Empty;
+
         serverDesc = FormatAsComment(serverDesc);
 
-        httpFile.AppendLine("#");
-        httpFile.AppendLine($"# {title}");
-        if (!string.IsNullOrEmpty(description) && description != title)
+        httpFile.AppendLine($"@endpoint = {endpoint}");
+
+        if (document.SecurityRequirements.Count > 0)
         {
-            httpFile.AppendLine($"# {description}");
+            httpFile.AppendLine($"@token = <your_token_here>");
+            httpFile.AppendLine($"@apikey = <your_apikey_here>");
         }
-        if (!string.IsNullOrEmpty(document.Info.Version))
-        {
-            httpFile.AppendLine($"# Version: {document.Info.Version}");
-        }
-        if (IsUrl(source))
-        {
-            httpFile.AppendLine($"# Source: {source}");
-        }
-        httpFile.AppendLine($"# Generated: {DateTime.Now:yyyy-MM-dd HH:mm:ss}");
-        httpFile.AppendLine("#");
+
         httpFile.AppendLine();
 
-        httpFile.AppendLine($"# {serverDesc}");
-        httpFile.AppendLine($"@endpoint = {endpoint}");
+        httpFile.AppendLine($"# {title}");
+
+        if (!string.IsNullOrEmpty(description) && description != title)
+            httpFile.AppendLine($"# {description}");
+
+        if (!string.IsNullOrEmpty(document.Info.Version))
+            httpFile.AppendLine($"# Version: {document.Info.Version}");
+
+        if (IsUrl(source))
+            httpFile.AppendLine($"# Source: {source}");
+
+        httpFile.AppendLine($"# Generated {serverDesc}: {DateTime.Now:yyyy-MM-dd HH:mm:ss}");
+
+        httpFile.AppendLine();
         httpFile.AppendLine();
 
         // Generate requests for each path/operation
@@ -373,30 +364,26 @@ public class Program
 
                 // Add common headers if the operation accepts JSON
                 if (HasJsonContent(operation))
-                {
                     httpFile.AppendLine("Content-Type: application/json");
-                }
 
                 // Add authentication headers if required
                 var authHeaders = GetAuthenticationHeaders(operation, document);
+
                 foreach (var header in authHeaders)
                 {
                     httpFile.AppendLine(header);
                 }
 
-                httpFile.AppendLine();
-
                 // Add example body for POST/PUT/PATCH operations
                 if (ShouldIncludeExampleBody(method, operation))
                 {
                     var exampleBody = GenerateExampleBody(operation);
+
                     if (!string.IsNullOrEmpty(exampleBody))
-                    {
                         httpFile.AppendLine(exampleBody);
-                        httpFile.AppendLine();
-                    }
                 }
 
+                httpFile.AppendLine();
                 httpFile.AppendLine();
             }
         }

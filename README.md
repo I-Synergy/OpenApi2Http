@@ -22,11 +22,17 @@ Install as a global .NET tool:
 dotnet tool install --global OpenApi2Http
 ```
 
-Or install from a local package:
+Or install from a local package (from solution root):
 
 ```bash
-dotnet pack
-dotnet tool install --global --add-source ./bin/Debug OpenApi2Http
+dotnet build -c Debug
+dotnet tool install --global OpenApi2Http --allow-downgrade --source packages
+```
+
+Remove global tool:
+
+```bash
+dotnet tool uninstall --global OpenApi2Http
 ```
 
 ## Usage

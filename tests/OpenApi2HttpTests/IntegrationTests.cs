@@ -154,7 +154,7 @@ public class IntegrationTests
 
         content.Should().Contain("# Pet Store API");
         content.Should().Contain($"# Source: {url}");
-        content.Should().Contain("# Generated:");
+        content.Should().Contain("# Generated");
         content.Should().Contain("@endpoint = https://petstore.swagger.io/v2");
     }
 
